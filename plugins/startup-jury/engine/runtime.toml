@@ -1,0 +1,33 @@
+# Startup Jury only. The base user config is preserved.
+# Validated against the app-bundled Codex CLI 0.153.4.
+# The coordinator uses V1 lifecycle tools; all eleven custom roles use GPT-6 Astra.
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+approval_policy = "never"
+web_search = "live"
+allow_login_shell = false
+notify = []
+
+[features]
+apps = false
+plugins = false
+hooks = false
+browser_use = false
+browser_use_external = false
+computer_use = false
+in_app_browser = false
+image_generation = false
+goals = false
+memories = false
+remote_control = false
+enable_fanout = false
+skill_mcp_dependency_install = false
+tool_suggest = false
+multi_agent_v2 = false
+multi_agent = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 8
+max_depth = 1

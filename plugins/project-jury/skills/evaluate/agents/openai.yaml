@@ -1,0 +1,6 @@
+interface:
+  display_name: "Project Jury"
+  short_description: "Six specialists, a Verifier and a Judge"
+  default_prompt: "Use Project Jury to evaluate this idea through its existing isolated engine."
+policy:
+  allow_implicit_invocation: false

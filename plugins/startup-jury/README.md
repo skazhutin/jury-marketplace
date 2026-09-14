@@ -1,0 +1,11 @@
+# Startup Jury
+
+See the [marketplace README](../../README.md) for installation, compatibility and privacy.
+
+This complete package contains the authoritative rules and native roles in `engine/`,
+a bounded stdio MCP bridge, and the existing result widget with structured text fallback.
+No global Jury engine or manual agent setup is required.
+
+For development, run `npm ci`, `npm test`, and `npm run build` in this directory.
+Bundled JavaScript ships with the package; end users do not run npm install.
+Change substantive rules only in `engine/`; keep the adapter limited to transport/presentation.

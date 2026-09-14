@@ -1,0 +1,4 @@
+# Preserve bundled/vendor text verbatim; generated license comments may contain spaces.
+plugins/*/THIRD_PARTY_NOTICES.md whitespace=-blank-at-eol
+plugins/*/server/bundle.mjs whitespace=-blank-at-eol
+plugins/startup-jury/web/result.html whitespace=-blank-at-eol

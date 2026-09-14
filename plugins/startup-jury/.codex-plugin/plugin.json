@@ -1,0 +1,27 @@
+{
+  "name": "startup-jury",
+  "version": "1.0.0",
+  "description": "Eight independent specialists, a Verifier, a Cross-Examiner and a Judge assess whether a startup is worth pursuing.",
+  "author": {
+    "name": "skazhutin"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Startup Jury",
+    "shortDescription": "A rigorous decision on whether to pursue a startup",
+    "longDescription": "Eight independent specialists, a Verifier, a Cross-Examiner and a Judge assess whether a startup is worth pursuing. COMPUTER-ONLY: includes its native Jury engine; requires a compatible local Codex login, Python 3.11+ and Node.js 20+. No global Jury installation or manual agent setup.",
+    "developerName": "skazhutin",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "Evaluate this startup idea: ..."
+    ],
+    "brandColor": "#136F63",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/icon.svg"
+  }
+}

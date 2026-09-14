@@ -1,0 +1,6 @@
+interface:
+  display_name: "Startup Jury"
+  short_description: "Evidence-based startup pursuit decisions"
+  default_prompt: "Use $startup-jury to evaluate whether this startup idea merits serious pursuit: "
+policy:
+  allow_implicit_invocation: true

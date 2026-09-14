@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "project_jury": {
+      "cwd": "./",
+      "command": "python3",
+      "args": [
+        "./scripts/start_server.py"
+      ]
+    }
+  }
+}

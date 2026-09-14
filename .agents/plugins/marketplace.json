@@ -1,0 +1,32 @@
+{
+  "name": "jury-marketplace",
+  "interface": {
+    "displayName": "Jury Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "project-jury",
+      "source": {
+        "source": "local",
+        "path": "./plugins/project-jury"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "startup-jury",
+      "source": {
+        "source": "local",
+        "path": "./plugins/startup-jury"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

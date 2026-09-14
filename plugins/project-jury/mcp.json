@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "project_jury": {
+      "cwd": "./",
+      "command": "python3",
+      "args": [
+        "./scripts/start_server.py"
+      ],
+      "type": "stdio"
+    }
+  },
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
+}

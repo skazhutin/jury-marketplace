@@ -1,0 +1,36 @@
+# Isolated Project Jury parent only; normal sessions are unchanged.
+
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+approval_policy = "never"
+web_search = "live"
+notify = []
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 6
+
+[features]
+multi_agent = true
+image_generation = false
+goals = false
+apps = false
+plugins = false
+remote_plugin = false
+computer_use = false
+browser_use = false
+browser_use_external = false
+in_app_browser = false
+hooks = false
+memories = false
+shell_snapshot = false
+skill_mcp_dependency_install = false
+
+[apps._default]
+enabled = false
+destructive_enabled = false
+open_world_enabled = false
+
+[shell_environment_policy]
+inherit = "none"

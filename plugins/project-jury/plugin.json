@@ -1,0 +1,39 @@
+{
+  "name": "project-jury",
+  "version": "1.0.0",
+  "description": "Six independent specialists, a Verifier and a Judge assess whether a project is worth building.",
+  "author": {
+    "name": "skazhutin"
+  },
+  "keywords": [
+    "project evaluation",
+    "research",
+    "evidence",
+    "multi-agent",
+    "read-only"
+  ],
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "repository": "https://github.com/skazhutin/jury-marketplace",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Project Jury",
+        "shortDescription": "An independent, evidence-based project verdict",
+        "longDescription": "Six independent specialists, a Verifier and a Judge assess whether a project is worth building. COMPUTER-ONLY: includes its native Jury engine; requires a compatible local Codex login, Python 3.11+ and Node.js 20+. No global Jury installation or manual agent setup.",
+        "developerName": "skazhutin",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Interactive"
+        ],
+        "defaultPrompt": [
+          "Evaluate this idea: ..."
+        ],
+        "brandColor": "#184A8B",
+        "composerIcon": "./assets/icon.svg",
+        "logo": "./assets/icon.svg"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Project Jury"
+  short_description: "Decide whether a project is worth starting"
+  default_prompt: "Use $project-jury to critically evaluate whether this project idea is worth starting."
+policy:
+  allow_implicit_invocation: true
