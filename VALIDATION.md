@@ -9,7 +9,7 @@ Version: **1.0.0** for both plugins. Validation date: **2026-09-14**.
 | Skill validation | PASSED | Both routing skills and authoritative engine skills |
 | Marketplace parser and discovery | PASSED | Both entries resolved through CLI 0.154.0-alpha.6.2 |
 | Clean local marketplace installation | PASSED | Separate Codex home; both plugins installed at 1.0.0 |
-| Git marketplace installation | NOT TESTED | Updated after public repository validation |
+| Git marketplace installation | PASSED | Public Git source on main added in another clean Codex home; both plugins discovered and installed |
 | Project native complete-reference case | PASSED | Real custom project_value; original report accepted |
 | Project missing-reference case | PASSED | Removing one receipt from that native report caused rejection; removing native injected content also failed before dispatch |
 | Project coordinator-suppression case | PASSED | A fresh real custom project_value received mandatory developer context and retained required receipts despite the conflicting coordinator request |
@@ -19,7 +19,9 @@ Version: **1.0.0** for both plugins. Validation date: **2026-09-14**.
 | Startup write restriction | PASSED | Native role observed PermissionError on the authorized creation canary; the file remained absent |
 | Startup recorder regressions | PASSED | Five existing model-free tests |
 | Adapter tests | PASSED | Nine Project and three Startup tests |
-| Bundled MCP contracts | PASSED | Both handshakes, bounded operations, invalid-input rejection, exact text fallback, widget resource retrieval; no node_modules required |
+| Bundled MCP contracts | PASSED | Both handshakes, bounded operations, invalid-input rejection, exact text fallback and widget resource retrieval repeated against Git-installed packages; no node_modules required |
+| Git-installed launcher boundary | PASSED | Both actual entrypoints prepared all 8/11 native definitions, resolved bundled paths and read-only flags; subprocess intercepted before any model call |
+| Publication safety | PASSED | Working tree, staged blobs and reachable history scanned for credentials, personal paths, private job IDs and runtime artifacts |
 | Local widget rendering | PASSED | Existing widgets through a synthetic MCP Apps host at 390px and 900px; keyboard disclosure; no horizontal overflow or page errors |
 | Desktop picker / literal @ selection | NOT TESTED | Not inferred from CLI discovery |
 | Native Desktop inline widgets | NOT TESTED | Not inferred from the local browser harness |
