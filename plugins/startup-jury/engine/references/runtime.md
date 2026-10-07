@@ -18,9 +18,10 @@ Private launcher/job artifacts are outside user repositories; the evaluation too
 cannot choose an executable or an arbitrary output path.
 
 The supported target is a compatible macOS or Linux local Codex runtime, Python
-3.11+ and Node.js 20+. Validated with app CLI 0.154.0-alpha.6.2; older 0.137.0 lacks
-required isolation flags and is unsupported. The launcher prefers the app-bundled
-Codex when present, then PATH. Windows and web/mobile execution are not supported.
+3.11+ and Node.js 20+. Isolation capabilities were checked with CLI 0.158.0;
+older 0.137.0 lacks required isolation flags and is unsupported. The launcher
+checks Codex on PATH first, then desktop fallbacks. An explicit JURY_CODEX_BINARY
+override must itself be compatible. Windows and web/mobile execution are not supported.
 No model substitution is made on unavailable model access: return BLOCKED / NOT ISSUED.
 
 Startup Jury retains its eight independent Stage-1 roles, Verifier,

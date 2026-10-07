@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-10-07
+
+- Fix Project Jury preflight for modern collaboration runtimes that expose no close tool. Confirm terminal completion, preserve permission checks, and require a fresh context for every reviewer and retry. Document active-turn capacity and local V2 completed-agent eviction with primary sources.
+- Correct runtime documentation to match PATH-first compatible CLI selection and distinguish READY from a completed evaluation. Startup Jury retains its recorded spawn/close lifecycle; this patch does not claim a full Startup run.
+
 ## 1.1.0 — 2026-10-07
 
 - Update MCP SDK to 1.32.1, MCP Apps to 2.0.3, Zod to 4.6.5, and affected transitive dependencies; rebuild shipped server and UI bundles. The release audit reports zero known vulnerabilities.

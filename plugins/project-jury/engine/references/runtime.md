@@ -18,10 +18,18 @@ Private launcher/job artifacts are outside user repositories; the evaluation too
 cannot choose an executable or an arbitrary output path.
 
 The supported target is a compatible macOS or Linux local Codex runtime, Python
-3.11+ and Node.js 20+. Validated with app CLI 0.154.0-alpha.6.2; older 0.137.0 lacks
-required isolation flags and is unsupported. The launcher prefers the app-bundled
-Codex when present, then PATH. Windows and web/mobile execution are not supported.
+3.11+ and Node.js 20+. Isolation capabilities were checked with CLI 0.158.0;
+older 0.137.0 lacks required isolation flags and is unsupported. The launcher
+checks Codex on PATH first, then desktop fallbacks. An explicit JURY_CODEX_BINARY
+override must itself be compatible. Windows and web/mobile execution are not supported.
 No model substitution is made on unavailable model access: return BLOCKED / NOT ISSUED.
+
+Use the actual exposed collaboration lifecycle. Hosted collaboration limits active
+turns and has no close tool. Local V2 unloads completed idle agents when needed.
+Confirm completion and capture the report, then spawn a fresh context for the next
+role; do not reuse or reactivate a completed preflight or reviewer. See the sourced
+lifecycle contract in orchestration.md. READY diagnostics do not exercise these
+model-dependent paths or establish that a full Jury evaluation succeeded.
 
 Project Jury retains its six independent Stage-1 roles, Verifier and Judge.
 All mandatory role references are inserted verbatim into native developer context.
