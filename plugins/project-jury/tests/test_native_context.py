@@ -7,11 +7,12 @@ import sys
 import tempfile
 import tomllib
 import unittest
+import subprocess
 
 ENGINE = Path(__file__).resolve().parents[1] / 'engine'
 sys.path.insert(0, str(ENGINE / 'scripts'))
 from native_runtime import prepare_agents, reference_receipts, validate_agents
-from run_jury import ROLES, STAGE_ONE, validate_result, section_value
+from run_jury import ROLES, STAGE_ONE, validate_result, section_value, canary_shell_command
 
 
 def completion():
@@ -31,6 +32,14 @@ def completion():
 
 
 class NativeContextTests(unittest.TestCase):
+    def test_canary_uses_builtins_with_empty_path_and_quotes_exact_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            canary = Path(directory)/"canary with spaces and ' quote"
+            result = subprocess.run(['/bin/sh','-c',canary_shell_command(canary)],env={'PATH':''},capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(canary.read_text(),'jury-canary')
+            self.assertEqual(len(list(Path(directory).iterdir())),1)
+
     def test_complete_receipts_are_accepted(self):
         validate_result(completion(), 'fixture', False)
 

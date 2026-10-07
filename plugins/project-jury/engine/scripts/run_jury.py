@@ -12,6 +12,7 @@ import time
 import re
 import signal
 import tomllib
+import shlex
 from native_runtime import prepare_agents, validate_reference_report, agent_flags, resolve_codex
 from runtime_progress import RunProgress
 
@@ -19,6 +20,10 @@ ROLES=['project_value','project_technical','project_landscape','project_executio
 STAGE_ONE=['BOTTOM LINE','STRONGEST FINDINGS','STRONGEST ARGUMENT AGAINST MY OWN CONCLUSION','DECISION-CRITICAL ASSUMPTIONS','RISKS / FLAWS','RESULT','CONFIDENCE']
 VERIFIER=['VERIFIED DECISION-CRITICAL FACTS','DISPROVEN / WEAK CLAIMS','IMPORTANT UNKNOWNS','DISPUTES RESOLVED','DISPUTES STILL UNRESOLVED','SOURCE-DEPENDENCY / CORRELATED-EVIDENCE RISKS','VERIFICATION LIMITATIONS']
 JUDGE=['ANALYSIS STATUS','VERDICT','CONFIDENCE','DECISIVE REASON','WHAT IS ACTUALLY STRONG','WHAT IS ACTUALLY WEAK','FATAL FLAWS','MAJOR CONCERNS','KEY UNPROVEN ASSUMPTIONS','AGENT DISAGREEMENTS','REAL-WORLD / EXISTING-SOLUTIONS CHECK','TECHNICAL REALITY CHECK','ADOPTION / USE REALITY','COMMERCIAL UPSIDE','WHAT WOULD CHANGE THE VERDICT','FINAL ASSESSMENT']
+
+def canary_shell_command(path):
+    # Shell builtins avoid false permission failures from a deliberately empty PATH.
+    return "printf '%s' 'jury-canary' > " + shlex.quote(str(path))
 
 def object_schema(properties):
     return {'type':'object','additionalProperties':False,'properties':properties,'required':list(properties)}
@@ -155,7 +160,8 @@ For effective child sandbox validation, ask project_technical to report the perm
         prepare_agents(temp, root, root/'native_agents', ROLES)
         canary=Path(temp)/'write-must-be-denied'
         canary_patch=Path(temp)/'patch-must-be-denied'
-        instructions+=f'\nCANARY={canary}\nCANARY_PATCH={canary_patch}\nFROZEN_INPUT_SHA256={digest}\nFROZEN_INPUT={frozen}\n'
+        instructions+=f'\nCANARY={canary}\nCANARY_PATCH={canary_patch}\nCANARY_SHELL_COMMAND={json.dumps(canary_shell_command(canary))}\nFROZEN_INPUT_SHA256={digest}\nFROZEN_INPUT={frozen}\n'
+        instructions+='\nFor the synthetic-only shell write probe, pass the exact CANARY_SHELL_COMMAND string to project_technical and require its execution with login=false. It uses only a shell builtin and redirection; do not substitute touch, python or another PATH-dependent executable. Command-not-found is not sandbox denial evidence. If a probe used the wrong executable and failed to launch, repeat only the authorized disposable probe with this exact builtin command before deciding whether the permission barrier passed. Do not pass project content until an actual attempted write is observed to be denied.\n'
         # Ignore the normal config only for this subprocess. Auth remains in CODEX_HOME.
         schema_path=Path(temp)/'result-schema.json';schema_path.write_text(json.dumps(result_schema()))
         command=[str(binary),'exec','--strict-config','--ignore-user-config','--ignore-rules','--ephemeral','--skip-git-repo-check','--sandbox','read-only']

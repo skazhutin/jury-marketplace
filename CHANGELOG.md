@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3 — 2026-10-07
+
+- Make the authorized shell permission canary deterministic: use a quoted shell-builtin redirection command, which works with the intentionally stripped PATH. A missing executable never counts as sandbox-denial evidence; keep both canaries and the fail-closed permission barrier.
+
 ## 1.1.2 — 2026-10-07
 
 - Add allowlisted operational progress to Project Jury polling. Never store prompts, commands, role report text or private reasoning in progress metadata; completed context counts include preflight/retries and do not imply a verdict.
