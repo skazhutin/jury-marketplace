@@ -12,9 +12,10 @@ Local environment: macOS, Codex CLI 0.158.0, Node 24.16.0, Python 3.12.13.
 | Dependency vulnerability audit | PASSED | Both complete npm dependency trees: zero reported vulnerabilities after SDK/Apps/Zod and transitive updates |
 | Local readiness | PASSED | Both 1.1.0 packages return READY; compatible Codex, login, Python, Node and bundled role configurations |
 | Native Startup coordinator preflight | PASSED | CLI 0.158.0; observed read_ok, write_denied, network_denied and canary_absent; no Jury roles started |
-| CI maintenance | CONFIGURED | Push/PR, manual and weekly runs; Linux/macOS × Node 20/24 × Python 3.11/3.14; verify actual workflow runs before claiming a platform passed |
-| Dependency maintenance | CONFIGURED | Weekly grouped npm and GitHub Actions Dependabot updates; rebuilt bundles and notices required |
+| CI maintenance | PASSED | All eight Linux/macOS × Node 20/24 × Python 3.11/3.14 jobs passed in [run 37599050227](https://github.com/skazhutin/jury-marketplace/actions/runs/37599050227); push/PR, manual and weekly runs enabled |
+| Dependency maintenance | PASSED | Initial npm and GitHub Actions Dependabot update jobs succeeded; weekly grouped updates enabled; rebuilt bundles and notices required |
 | Local widget rendering | PASSED | Updated bundles in a synthetic MCP Apps host at 390px and 900px; keyboard disclosures, inert report text, no horizontal overflow or console errors |
+| Git-installed MCP contracts | PASSED | Both installed 1.1.0 bundles, with no node_modules: handshake version, tool discovery, health_check READY and result resource retrieval; installed transport used Python 3.14.5 |
 | Full eight/eleven-role evaluation | NOT RERUN | Readiness and model-free regressions do not substitute for a full independent Jury evaluation |
 | Native Desktop inline widget / picker | NOT TESTED | MCP resource retrieval does not establish native app presentation |
 
