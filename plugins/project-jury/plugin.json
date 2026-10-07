@@ -1,6 +1,6 @@
 {
   "name": "project-jury",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Six independent specialists, a Verifier and a Judge assess whether a project is worth building.",
   "author": {
     "name": "skazhutin"

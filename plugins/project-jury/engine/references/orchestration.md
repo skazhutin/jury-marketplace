@@ -20,6 +20,16 @@ Lifecycle references: [hosted collaboration and active-turn limits](https://deve
 
 The launcher runs in an isolated read-only parent, strips shell environment inheritance, disables configured apps/plugins/MCP integrations and hooks, and uses native web search for current evidence. Native web access does not require shell network access. No reviewer may install dependencies or launch shell network clients. Verify effective permissions at launch and child startup. A stored read-only default alone is not proof.
 
+Capability checks concern actual callable tools and effective permissions. A skill
+catalog entry named imagegen, a readable SKILL.md, an image display helper or a
+generatedImage result-rendering helper does not provide image-generation access.
+Do not block solely because such guidance or rendering helpers remain visible.
+Block if a callable image-generation backend or other mutation integration is
+actually exposed, and name that callable tool/schema in the limitation without
+invoking it. If no backend is present, record that observation and continue after
+the required denied-write probes and terminal preflight completion. Do not turn
+absence of a callable integration into hypothetical mutation access.
+
 # 4. Architecture
 
 Use a staged multi-agent process.

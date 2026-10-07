@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4 — 2026-10-07
+
+- Correct a false preflight block: an imagegen skill catalog entry or image-rendering helper does not establish a callable image-generation backend. Require the actual tool/schema for a mutation-capability block; preserve denied-write probes and stop for genuinely callable mutation integrations.
+
 ## 1.1.3 — 2026-10-07
 
 - Make the authorized shell permission canary deterministic: use a quoted shell-builtin redirection command, which works with the intentionally stripped PATH. A missing executable never counts as sandbox-denial evidence; keep both canaries and the fail-closed permission barrier.
