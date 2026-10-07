@@ -86,10 +86,27 @@ export function submit(args) {
   return retrieve(args.request_id);
 }
 
+export function safeProgress(value) {
+  if (!value || typeof value !== 'object') return null;
+  const count = n => Number.isSafeInteger(n) && n >= 0 && n <= 1000000;
+  const pick = (source, keys) => Object.fromEntries(keys.filter(k => count(source?.[k])).map(k => [k,source[k]]));
+  const activities = ['starting','thread.started','turn.started','turn.completed','turn.failed','error','agent_message','command_execution','web_search','collab_tool_call','mcp_tool_call'];
+  return {
+    event_count: count(value.event_count) ? value.event_count : 0,
+    last_event_at: Number.isFinite(value.last_event_at) ? value.last_event_at : null,
+    last_activity: activities.includes(value.last_activity) ? value.last_activity : 'starting',
+    item_counts: pick(value.item_counts,['agent_message','command_execution','web_search','collab_tool_call','mcp_tool_call','error']),
+    collaboration_counts: pick(value.collaboration_counts,['spawn_agent','send_input','wait','close_agent']),
+    agent_counts: pick(value.agent_counts,['pending_init','running','interrupted','completed','errored','shutdown','not_found'])
+  };
+}
+
 export function retrieve(id) {
   const path = jobPath(id);
   if (!existsSync(join(path,'status.json'))) throw new Error('Project Jury job was not found on this computer.');
   const state = JSON.parse(readFileSync(join(path,'status.json'),'utf8'));
+  try { state.progress = safeProgress(JSON.parse(readFileSync(join(path,'progress.json'),'utf8'))); }
+  catch { state.progress = null; }
   if (state.job_status === 'RUNNING' && (Date.now()/1000-state.started_at > 2500)) {
     return {...state,job_status:'FAILED',error:'The isolated run did not finish within its runtime deadline. No successful result is claimed.'};
   }
@@ -107,7 +124,7 @@ export function toolResult(state, includeReports=false) {
     message:state.error || (state.job_status === 'RUNNING' ? 'The independent Jury is running. Retrieve this job again in about 30 seconds; do not submit a duplicate evaluation.' : ''),
     sections:knownSections.map(([key,title])=>({title,text:parsed[key]?.trim() || 'Not reported.'})),
     final_report:result?.final_report || '',limitations:result?.limitations || [],
-    runtime:{engine:state.engine || join(engineRoot,'scripts/run_jury.py'),engine_sha256:state.engine_sha256 || '',version:state.runtime_version || '',packet_sha256:state.packet_sha256 || '',stage_sequence:result?.stage_sequence || [],revalidation:state.revalidation || null}
+    runtime:{engine:state.engine || join(engineRoot,'scripts/run_jury.py'),engine_sha256:state.engine_sha256 || '',version:state.runtime_version || '',packet_sha256:state.packet_sha256 || '',stage_sequence:result?.stage_sequence || [],revalidation:state.revalidation || null,progress:safeProgress(state.progress)}
   };
   const detail = result ? {roles:result.roles,permission_evidence:result.permission_evidence,canary_attempted:result.canary_attempted,canary_denied:result.canary_denied,web_probe_succeeded:result.web_probe_succeeded} : {roles:[]};
   let text = result ? `# PROJECT JURY\n\n${result.final_report}` : `# PROJECT JURY\n\nJob: ${state.job_id}\nExecution: ${state.job_status}\nANALYSIS STATUS: ${summary.analysis_status}\nVERDICT: NOT ISSUED\nCONFIDENCE: ${confidence}\n\n${summary.message}`;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 — 2026-10-07
+
+- Add allowlisted operational progress to Project Jury polling. Never store prompts, commands, role report text or private reasoning in progress metadata; completed context counts include preflight/retries and do not imply a verdict.
+- Bound report verbosity while preserving every required section, evidence record and experiment criterion. Keep the 40-minute deadline, native models, fresh contexts and acceptance gates unchanged.
+- Preserve only the private intentional completion candidate for validation diagnostics; never expose unvalidated results through MCP.
+
 ## 1.1.1 — 2026-10-07
 
 - Fix Project Jury preflight for modern collaboration runtimes that expose no close tool. Confirm terminal completion, preserve permission checks, and require a fresh context for every reviewer and retry. Document active-turn capacity and local V2 completed-agent eviction with primary sources.

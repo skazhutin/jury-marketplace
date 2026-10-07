@@ -2,7 +2,7 @@
 
 [![Jury quality](https://github.com/skazhutin/jury-marketplace/actions/workflows/quality.yml/badge.svg)](https://github.com/skazhutin/jury-marketplace/actions/workflows/quality.yml)
 
-Current release: **1.1.1**. See [CHANGELOG.md](CHANGELOG.md) for changes.
+Current release: **1.1.2**. See [CHANGELOG.md](CHANGELOG.md) for changes.
 
 Two independent, multi-agent systems for deciding whether an idea deserves serious work:
 

@@ -1,5 +1,22 @@
 # Release validation
 
+## Release 1.1.1 — 2026-10-07
+
+This patch corrects Project Jury's preflight lifecycle for modern collaboration
+without changing reviewer models, independence, permission probes or stage barriers.
+The first real 1.1.0 attempt stopped before Stage 1 because it required an unavailable
+close operation; it produced no project verdict. The lifecycle correction uses
+primary runtime documentation and Codex 0.158.0's completed-agent eviction code/tests.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Local regressions | PASSED | All 37 JavaScript/Python/recording tests; package consistency and diff checks |
+| Dependency audit | PASSED | Both complete npm trees: zero reported vulnerabilities |
+| CI matrix | PASSED | All eight Linux/macOS × Node 20/24 × Python 3.11/3.14 jobs in [run 37601523093](https://github.com/skazhutin/jury-marketplace/actions/runs/37601523093) |
+| Installed MCP contracts | PASSED | Both Git-installed 1.1.1 packages: version handshake, tool discovery, health_check READY and widget resource retrieval, without node_modules |
+| Real Project Jury evaluation | FAILED | The real 1.1.1 attempt reached the 40-minute deadline without an accepted completion. No substantive verdict or completed stage is claimed; ordinary jobs had no progress metadata. |
+| Full Startup Jury evaluation | NOT RERUN | The recorded legacy spawn/close lifecycle is unchanged; local READY does not test remote model access |
+
 ## Release 1.1.0 — 2026-10-07
 
 Local environment: macOS, Codex CLI 0.158.0, Node 24.16.0, Python 3.12.13.

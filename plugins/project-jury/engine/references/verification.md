@@ -1,5 +1,9 @@
 # 13. STAGE 2 — Verification
 
+Keep the report within 800 words excluding mandatory reference receipts. Preserve
+all required sections, claim corrections, source dependencies and unresolved
+decision-critical uncertainty. Concision is not permission to omit verification.
+
 After all available first-stage reports are complete, run:
 
 `project_verifier`

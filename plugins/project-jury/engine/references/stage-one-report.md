@@ -47,5 +47,9 @@ Confidence means confidence in this agent's assessment, NOT project quality.
 Do not manufacture numerical precision. Explain the main source of uncertainty and what evidence would most change confidence.
 
 Keep reports analytical rather than verbose.
+Use at most 500 words excluding mandatory reference receipts. Preserve every
+required section and compact records for the decision-critical claims. Research
+only until the evidence can support or bound this role's conclusion; stop when
+additional sources repeat the same evidence.
 
 ---

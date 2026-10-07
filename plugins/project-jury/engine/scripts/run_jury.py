@@ -13,6 +13,7 @@ import re
 import signal
 import tomllib
 from native_runtime import prepare_agents, validate_reference_report, agent_flags, resolve_codex
+from runtime_progress import RunProgress
 
 ROLES=['project_value','project_technical','project_landscape','project_execution','project_advocate','project_skeptic','project_verifier','project_judge']
 STAGE_ONE=['BOTTOM LINE','STRONGEST FINDINGS','STRONGEST ARGUMENT AGAINST MY OWN CONCLUSION','DECISION-CRITICAL ASSUMPTIONS','RISKS / FLAWS','RESULT','CONFIDENCE']
@@ -102,6 +103,7 @@ def main():
     mode.add_argument('--smoke-test',action='store_true')
     parser.add_argument('--format',choices=['text','json'],default='text',help='Return the validated completion record for adapters, or the Judge report.')
     parser.add_argument('--trace',type=Path,help='Optional coordinator-owned JSONL evidence file.')
+    parser.add_argument('--progress',type=Path,help='Private allowlisted operational metadata; no runtime text.')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
     codex_home=Path(os.environ.get('CODEX_HOME',str(Path.home()/'.codex')))
@@ -139,8 +141,8 @@ def main():
 Read {root}/references/orchestration.md, {root}/references/principles-and-evidence.md, {root}/references/stage-one-report.md, {root}/references/verification.md and {root}/references/adjudication.md in full. This is already the isolated launcher; do not relaunch it or create nested CLI processes.
 Explicitly use the installed native custom agents: project_value, project_technical, project_landscape, project_execution, project_advocate, project_skeptic, then project_verifier, then project_judge. Inspect the actual spawn tool schema and select each custom agent using the supported selector. If custom-role selection is unavailable, stop with BLOCKED/NOT ISSUED and explain that capability limitation; do not impersonate agents or spawn generic agents with only a role label.
 Pass the exact FROZEN_INPUT string and SHA256 below directly to every Stage 1 agent with no parent-history fork. No coordinator opinion or earlier report may be included. Each agent must echo receipt of the SHA256, its role identity, and the received report names. Only Stage 2 and 3 may receive earlier reports. Do not write reports to shared files. Capture results in memory and confirm terminal completion before later batches/stages. Follow the runtime lifecycle in orchestration.md: hosted collaboration releases active-turn capacity on completion and local V2 can evict completed idle children; neither needs a close tool. Use an actual close/release tool only when exposed and required by that runtime. Never reactivate or reuse a completed child's context for another role or retry. Use six concurrent specialists if the effective cap allows; otherwise independent batches. All specialists must have effective read-only sandbox, no shell networking, and no apps/MCP/plugins/image-generation mutation access. Check this in the selected custom agent's actual runtime, rather than inferring it from generic spawn documentation. Custom files disable agents and multi_agent as a best-effort additional control. Recursion is forbidden by the role instructions; if collaboration tools remain exposed despite those settings, record this technical limitation and require no recursive calls. Mere exposure of collaboration tools is not by itself an evaluation blocker; any actual recursive dispatch is a protocol failure. Before passing project content, spawn one project_technical custom agent with no packet for a SYNTHETIC_SMOKE_TEST=true permission preflight, inspect its actual tools/context and authorized disposable canary result, capture it, and wait for confirmed terminal completion. Do not require an unavailable close tool; never resume this preflight child. This preflight is not a Stage 1 report and must never be passed to Stage 1 reviewers. If the child retains mutation access or its canary write succeeds, stop. Do not treat written defaults as proof of effective enforcement.
-Use the stage barriers, complete report formats, one retry per failed role, claim registry, disagreements, and failure handling in the references. Maintain an explicit ledger. Give the verifier and judge full reports, not summaries. Return the Judge's final structure. Never evaluate an unrelated alternative.
-Do not send messages outside the reviewer workflow, publish, install, mutate services, edit files, or execute project code. Use only native web search for external research. Read only the named Jury references and the legitimately supplied common sources. Do not inspect other sessions, secrets, or unrelated files. For every shell read, explicitly set login=false and avoid interactive shells to prevent user startup scripts attempting unrelated changes.
+Use the stage barriers, complete report formats, one retry per failed role, claim registry, disagreements, and failure handling in the references. Maintain an explicit ledger. Give the verifier and judge full reports, not summaries. Return the Judge's final structure. Never evaluate an unrelated alternative. Keep operational coordination brief. Tell each Stage 1 role to use at most 500 words excluding reference receipts, the Verifier 800 words and the Judge 1000 words. Preserve all required headings, compact decision-critical claim records, primary-source links and experiment criteria within these budgets. Prioritize claims capable of changing the verdict and stop redundant research. These output budgets do not waive evidence, permission, independence or stage-barrier requirements. Never rephrase a captured report to meet a budget; enforce it when dispatching the fresh role.
+Do not send messages outside the reviewer workflow, publish, install, mutate services, edit files, or execute project code. Use only native web search for external research. Read only the named Jury references and the legitimately supplied common sources. Do not inspect other sessions, secrets, or unrelated files. For every shell read, explicitly set login=false and avoid interactive shells to prevent user startup scripts attempting unrelated changes. Use /bin/cat for the named reference reads if the stripped shell PATH has no cat executable.
 '''
     if args.smoke_test:
         instructions+='''
@@ -173,6 +175,7 @@ For effective child sandbox validation, ask project_technical to report the perm
         # Version and payload hash contain no project content.
         print(f'{version}; Project Jury packet sha256={digest}',file=sys.stderr,flush=True)
         trace=args.trace.open('w') if args.trace else None
+        progress=RunProgress(args.progress) if args.progress else None
         process=None
         timer=None
         previous_sigterm=signal.getsignal(signal.SIGTERM)
@@ -204,6 +207,7 @@ For effective child sandbox validation, ask project_technical to report the perm
                 if trace: trace.write(line);trace.flush()
                 try: event=json.loads(line)
                 except json.JSONDecodeError: continue
+                if progress: progress.update(event)
                 if event.get('type')=='item.completed':
                     item=event.get('item',{})
                     if item.get('type')=='agent_message': final.append(item.get('text',''))
@@ -215,7 +219,12 @@ For effective child sandbox validation, ask project_technical to report the perm
             if result: raise SystemExit(f'BLOCKED: isolated Codex exited {result}; no successful Jury run is claimed.')
             if not final or not turn_completed: raise SystemExit('BLOCKED: runtime returned no completed turn.')
             try:
-                result_json=json.loads(final[-1]);validate_result(result_json,digest,args.smoke_test)
+                result_json=json.loads(final[-1])
+                if args.progress and isinstance(result_json,dict) and set(result_json)==set(result_schema()['properties']):
+                    # Intentional completion candidate only; never a runtime trace.
+                    # It is private debugging evidence, not an accepted Jury result.
+                    (args.progress.parent/'unvalidated-completion.json').write_text(json.dumps(result_json,ensure_ascii=False))
+                validate_result(result_json,digest,args.smoke_test)
             except (ValueError,KeyError,TypeError) as error:
                 raise SystemExit(f'BLOCKED: completion validation failed: {error}')
             print(json.dumps(result_json,ensure_ascii=False) if args.format=='json' else result_json['final_report'])

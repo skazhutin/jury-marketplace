@@ -28,7 +28,7 @@ save(state)
 try:
     if not engine.is_file():
         raise ValueError('Bundled Project Jury engine is incomplete; reinstall this plugin.')
-    command = [sys.executable, str(engine), '--format', 'json']
+    command = [sys.executable, str(engine), '--format', 'json', '--progress', str(job/'progress.json')]
     if state['synthetic']:
         command += ['--smoke-test', '--trace', str(job / 'synthetic-runtime.jsonl')]
     else:

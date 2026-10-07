@@ -31,6 +31,14 @@ role; do not reuse or reactivate a completed preflight or reviewer. See the sour
 lifecycle contract in orchestration.md. READY diagnostics do not exercise these
 model-dependent paths or establish that a full Jury evaluation succeeded.
 
+Normal jobs retain only allowlisted runtime activity counts/statuses for polling.
+They do not save raw runtime JSONL, prompts, commands, private reasoning or child
+report text in progress metadata. Completed context counts include the synthetic
+preflight and retries; they are not proof of completed Jury roles or a verdict.
+The launcher can privately preserve its intentional structured completion candidate
+for diagnosing validation failures; the API returns only an accepted completion.
+The 40-minute deadline and all report acceptance gates remain in force.
+
 Project Jury retains its six independent Stage-1 roles, Verifier and Judge.
 All mandatory role references are inserted verbatim into native developer context.
 Original files remain the sole editable ruleset; the launcher generates the copies

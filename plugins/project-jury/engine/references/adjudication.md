@@ -1,5 +1,10 @@
 # 14. STAGE 3 — Final adjudication
 
+Use at most 1000 words excluding mandatory reference receipts. Preserve the exact
+conceptual output structure, decisive evidence, disagreements and any required
+PASS / FAIL / INCONCLUSIVE experiment criteria. Do not repeat the complete
+specialist reports in the Judge report.
+
 After verification, run:
 
 `project_judge`

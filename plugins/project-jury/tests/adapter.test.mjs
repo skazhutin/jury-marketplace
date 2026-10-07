@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const temp=mkdtempSync(join(tmpdir(),'jury-adapter-test-'));
 process.env.CODEX_HOME=temp;
-const {validateSubmission,retrieve,submit,toolResult,sections,packetFields,jobsRoot}=await import('../server/adapter.mjs');
+const {validateSubmission,retrieve,submit,toolResult,sections,packetFields,jobsRoot,safeProgress}=await import('../server/adapter.mjs');
 const id='d0b1d039-b0e9-4d22-92dd-ea878f795a5d';
 const synthetic={request_id:id,mode:'synthetic_validation',packet:{},common_sources:[]};
 test.after(()=>rmSync(temp,{recursive:true,force:true}));
@@ -49,4 +49,15 @@ test('heading compatibility handles enum suffix and subordinate headings',()=>{
 test('failure is an evaluation blockage, never a negative project verdict',()=>{
  const r=toolResult({job_id:id,job_status:'FAILED',error:'Runtime unavailable'});
  assert.equal(r.structuredContent.analysis_status,'BLOCKED');assert.equal(r.structuredContent.verdict,'NOT ISSUED');assert.equal(r.isError,true);
+});
+test('progress projection rejects runtime text and never implies a Jury verdict',()=>{
+ const progress = {event_count:5,last_event_at:42,last_activity:'collab_tool_call',
+   agent_counts:{completed:1,PRIVATE_REASONING:10},collaboration_counts:{spawn_agent:1},
+   item_counts:{collab_tool_call:2},prompt:'PRIVATE_PACKET',report:'PRIVATE_REPORT'};
+ const state=toolResult({job_id:id,job_status:'RUNNING',progress});
+ assert.equal(state.structuredContent.analysis_status,'PENDING');
+ assert.equal(state.structuredContent.verdict,'NOT ISSUED');
+ assert.deepEqual(state.structuredContent.runtime.progress.agent_counts,{completed:1});
+ assert.ok(!JSON.stringify(state).includes('PRIVATE'));
+ assert.equal(safeProgress({event_count:-1,last_activity:'SECRET',item_counts:{web_search:NaN}}).last_activity,'starting');
 });
