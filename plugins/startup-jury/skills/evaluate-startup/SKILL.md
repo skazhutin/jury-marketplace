@@ -20,3 +20,7 @@ report BLOCKED / NOT ISSUED with the failure. Do not bypass isolation. This loca
 stdio plugin is COMPUTER-ONLY and includes all Jury engine/agent assets. A compatible local Codex login is required; no manual Jury setup is needed. It has no arbitrary shell, file, messaging,
 publishing, purchase or startup-execution API. Never supply the calling task's
 unrelated history or private files as startup evidence.
+
+For installation troubleshooting or readiness requests, call `health_check` first.
+It makes no model calls. Report BLOCKED checks accurately. READY confirms local
+readiness only; never present it as a successful full Jury evaluation.

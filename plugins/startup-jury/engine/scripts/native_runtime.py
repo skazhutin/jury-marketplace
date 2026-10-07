@@ -5,9 +5,55 @@ tool and no writes to personal agents or shared configuration.
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import tomllib
+
+REQUIRED_FLAGS = ('--strict-config', '--ignore-user-config', '--ignore-rules',
+                  '--ephemeral', '--json', '--output-schema')
+
+
+def resolve_codex():
+    """Select a compatible runtime, never silently replace an explicit override."""
+    override = os.environ.get('JURY_CODEX_BINARY')
+    candidates = [override] if override else [
+        shutil.which('codex'),
+        '/Applications/ChatGPT.app/Contents/Resources/codex',
+        '/Applications/Codex.app/Contents/Resources/codex',
+    ]
+    failures = []
+    for candidate in dict.fromkeys(c for c in candidates if c):
+        try:
+            version = subprocess.run([candidate, '--version'], capture_output=True,
+                                     text=True, check=True, timeout=5).stdout.strip()
+            help_text = subprocess.run([candidate, 'exec', '--help'], capture_output=True,
+                                      text=True, check=True, timeout=5).stdout
+            missing = [flag for flag in REQUIRED_FLAGS if flag not in help_text]
+            if missing:
+                failures.append(version + ' lacks ' + ', '.join(missing))
+                continue
+            return str(Path(candidate).resolve()), version
+        except (OSError, subprocess.SubprocessError):
+            failures.append('Runtime candidate unavailable')
+    raise RuntimeError('No compatible Codex runtime. ' + '; '.join(failures) +
+                       '. Install a current Codex CLI or set JURY_CODEX_BINARY.')
+
+
+def resolve_node():
+    candidates = [shutil.which('node'),
+                  '/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node']
+    for candidate in dict.fromkeys(c for c in candidates if c):
+        try:
+            version = subprocess.run([candidate, '--version'], capture_output=True,
+                                     text=True, check=True, timeout=5).stdout.strip()
+            if int(version.lstrip('v').split('.')[0]) >= 20:
+                return str(Path(candidate).resolve()), version
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+    raise RuntimeError('Jury plugins require Node.js 20+ on PATH or in the desktop runtime.')
 
 
 def reference_names(role):

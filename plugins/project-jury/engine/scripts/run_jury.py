@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,7 +12,7 @@ import time
 import re
 import signal
 import tomllib
-from native_runtime import prepare_agents, validate_reference_report, agent_flags
+from native_runtime import prepare_agents, validate_reference_report, agent_flags, resolve_codex
 
 ROLES=['project_value','project_technical','project_landscape','project_execution','project_advocate','project_skeptic','project_verifier','project_judge']
 STAGE_ONE=['BOTTOM LINE','STRONGEST FINDINGS','STRONGEST ARGUMENT AGAINST MY OWN CONCLUSION','DECISION-CRITICAL ASSUMPTIONS','RISKS / FLAWS','RESULT','CONFIDENCE']
@@ -106,19 +105,14 @@ def main():
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
     codex_home=Path(os.environ.get('CODEX_HOME',str(Path.home()/'.codex')))
-    binary=Path('/Applications/ChatGPT.app/Contents/Resources/codex')
-    if not binary.is_file():
-        found=shutil.which('codex')
-        if not found: raise SystemExit('BLOCKED: no local Codex runtime found.')
-        binary=Path(found)
+    try:
+        binary, version = resolve_codex()
+    except RuntimeError as error:
+        raise SystemExit('BLOCKED: ' + str(error))
     profile=root/'runtime.toml'
     if not profile.is_file(): raise SystemExit('BLOCKED: missing Project Jury runtime profile.')
     runtime_config=tomllib.loads(profile.read_text())
     if runtime_config.get('sandbox_mode')!='read-only' or runtime_config.get('approval_policy')!='never': raise SystemExit('BLOCKED: Jury profile has broader permissions than allowed.')
-    version=subprocess.run([str(binary),'--version'],capture_output=True,text=True,check=True).stdout.strip()
-    help_text=subprocess.run([str(binary),'exec','--help'],capture_output=True,text=True,check=True).stdout
-    for flag in ['--ignore-user-config','--ignore-rules','--ephemeral']:
-        if flag not in help_text: raise SystemExit(f'BLOCKED: {version} lacks required isolation option {flag}.')
     if args.smoke_test:
         payload={'packet':{
             'PROJECT TYPE':'synthetic orchestration fixture',
@@ -175,7 +169,7 @@ For effective child sandbox validation, ask project_technical to report the perm
         command+=list(config_flags(runtime_config))
         command+=list(agent_flags(temp, ROLES))
         command+=['-C',temp,'--json','--output-schema',str(schema_path),'-']
-        env={k:v for k,v in os.environ.items() if k in ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR']}
+        env={k:v for k,v in os.environ.items() if k in ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR','JURY_CODEX_BINARY']}
         # Version and payload hash contain no project content.
         print(f'{version}; Project Jury packet sha256={digest}',file=sys.stderr,flush=True)
         trace=args.trace.open('w') if args.trace else None

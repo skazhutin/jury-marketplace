@@ -1,5 +1,9 @@
 # Jury Marketplace
 
+[![Jury quality](https://github.com/skazhutin/jury-marketplace/actions/workflows/quality.yml/badge.svg)](https://github.com/skazhutin/jury-marketplace/actions/workflows/quality.yml)
+
+Current release: **1.1.0**. See [CHANGELOG.md](CHANGELOG.md) for changes.
+
 Two independent, multi-agent systems for deciding whether an idea deserves serious work:
 
 | Plugin | Question | Native workflow |
@@ -15,9 +19,13 @@ Both include an inspectable result widget and the Judge's original text fallback
 **Computer-only.** A compatible local Codex runtime and login are required, together
 with **Python 3.11+** and **Node.js 20+** available to the desktop host. Native roles
 require GPT-6 Astra access; Startup Jury also uses GPT-5.5 for its coordinator.
-Validated on macOS with app-bundled Codex **0.154.0-alpha.6.2**. CLI **0.137.0** is
-unsupported because it lacks required isolation options. Linux has compatible
-packaging but is not tested; Windows, web-only and mobile execution are unsupported.
+Validated locally on macOS with Codex CLI **0.158.0**, Python **3.12.13** and
+Node **24.16.0**. Launchers select a compatible Codex on PATH, then try desktop
+fallbacks, and check required isolation options before use. To choose a specific
+local executable, set `JURY_CODEX_BINARY`; an incompatible override blocks execution.
+Older runtimes lacking isolation options are unsupported. Model-free CI covers
+Linux/macOS, Node 20/24 and Python 3.11/3.14; full model-based Linux evaluations,
+Windows, web-only and mobile execution remain unverified or unsupported.
 Account or organization policies may limit local plugins or model access.
 
 ## Add this marketplace
@@ -51,7 +59,9 @@ plugin directories must be available.
 **No one-time Jury engine setup is required.** Each package includes its own native
 agent definitions, engine, instructions, schemas, validators, MCP bridge and UI.
 The launcher prepares private runtime files automatically; it never installs agents
-into your global configuration. Your existing Jury installations can coexist.
+into your global configuration. Older installations can remain available for
+recovery, but enable only one source
+per Jury to avoid invoking a stale personal copy instead of the Git package.
 
 The documented Desktop flow is intended usage. Actual visual marketplace/picker
 selection and native inline widget rendering were **NOT TESTED**. CLI installation
@@ -72,6 +82,24 @@ codex plugin add startup-jury@jury-marketplace
 Start a new CLI session afterward. Installing from Git does not upgrade Codex or
 grant model access. Missing capabilities return an execution failure rather than
 an invented Jury verdict.
+
+### Update and check readiness
+
+Updating the repository snapshot and refreshing installed plugins are separate
+steps. Run both installs after upgrading the marketplace:
+
+```sh
+codex plugin marketplace upgrade jury-marketplace
+codex plugin add project-jury@jury-marketplace
+codex plugin add startup-jury@jury-marketplace
+codex plugin list --marketplace jury-marketplace --json
+```
+
+Start a fresh chat to load the refreshed MCP processes. Use each plugin's
+`health_check` tool to inspect bundled roles, Python/Node, compatible Codex and login.
+Developers can run `npm run doctor` inside either plugin directory. A `READY`
+result is a local readiness check: it makes no model request and does not certify
+a complete Jury evaluation or remote model availability.
 
 ## Runtime and privacy
 
@@ -103,10 +131,19 @@ Modify substantive rules in each plugin's `engine/`; keep MCP adapters limited t
 transport and presentation. Commit source, lockfiles, bundles and dependency notices
 together. Use semantic versions; record Git revisions separately.
 
-Each plugin can be rebuilt with `npm ci`, `npm test`, and `npm run build` from its
+Each plugin can be rebuilt with `npm ci --ignore-scripts`, `npm test`, and `npm run build` from its
 directory. End users need no npm installation: the server and widget are bundled.
-Run `python3 -m unittest discover -s plugins/project-jury/tests -p 'test_*.py'` and
-`python3 plugins/startup-jury/engine/scripts/test_recording.py` for model-free engine checks.
+Run `python3 scripts/validate_repository.py`, Python test discovery in each plugin's
+`tests/`, and `python3 plugins/startup-jury/engine/scripts/test_recording.py` for
+model-free engine checks. Run `npm audit --audit-level=moderate` in both packages.
+
+GitHub Actions runs these checks on every push/PR and every Monday, across supported
+Node/Python versions on Linux and macOS. CI rebuilds bundles and requires them to
+match the committed artifacts. Dependabot proposes weekly npm and Actions updates.
+For every dependency update, rebuild bundles, update release metadata when releasing,
+run `python3 scripts/update_notices.py`, and pass CI before distributing it.
+Model requests require the user's local login
+and are deliberately excluded from CI. Never auto-merge an untested dependency update.
 
 The initial release uses targeted native role/reference/search checks, parser and
 adapter tests, isolated marketplace installation, and local widget checks. No full

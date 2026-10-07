@@ -1,9 +1,9 @@
 import {App} from '@modelcontextprotocol/ext-apps';
 import {render} from './view.mjs';
 const root=document.getElementById('jury');let current=null;let meta={};let timer;let connected=false;
-const app=new App({name:'Startup Jury',version:'1.0.0'},{});
+const app=new App({name:'Startup Jury',version:__JURY_VERSION__},{});
 function update(result){
-  if(result.isError){clearTimeout(timer);current={status:'FAILED',synthetic:current?.synthetic||false,error:result.content?.filter(x=>x.type==='text').map(x=>x.text).join('\n')||'The evaluation could not be retrieved.'};render(root,current);return;}
+  if(result.isError){clearTimeout(timer);current={status:'FAILED',synthetic:result.structuredContent?.synthetic??current?.synthetic??false,error:result.content?.filter(x=>x.type==='text').map(x=>x.text).join('\n')||'The evaluation could not be retrieved.'};render(root,current);return;}
   if(!result.structuredContent)return;
   current=result.structuredContent;meta=result._meta?.startupJuryDetails||{};render(root,current,meta);
   clearTimeout(timer);

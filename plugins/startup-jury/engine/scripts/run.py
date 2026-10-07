@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import socket
 import subprocess
 import sys
@@ -14,7 +13,7 @@ import tempfile
 import tomllib
 from recording import Recorder
 from result import build_result
-from native_runtime import prepare_agents, agent_flags
+from native_runtime import prepare_agents, agent_flags, resolve_codex
 from recording import STAGE_ONE, LATER
 
 SKILL = Path(__file__).resolve().parents[1]
@@ -113,10 +112,7 @@ def main():
     args=parser.parse_args()
     if args.json and args.result_json: raise ValueError('Choose native JSONL or structured result JSON')
     if args.progress_json and not args.result_json: raise ValueError('Progress requires structured result JSON')
-    bundled=Path('/Applications/ChatGPT.app/Contents/Resources/codex')
-    binary=str(bundled) if bundled.is_file() else shutil.which('codex')
-    if not binary:
-        raise RuntimeError('Codex CLI is not available; no independent Jury can be run')
+    binary, version = resolve_codex()
     import signal
     def interrupted(signum,frame): raise RuntimeError('Evaluation interrupted or timed out')
     signal.signal(signal.SIGTERM,interrupted)
@@ -178,7 +174,7 @@ and local listener belong to the launcher and contain no user data.
             command.extend(['--json','-'])
             process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                                      text=True,cwd=folder,start_new_session=True,
-                                     env={k:v for k,v in os.environ.items() if k in ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR']})
+                                     env={k:v for k,v in os.environ.items() if k in ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR','JURY_CODEX_BINARY']})
             permissions={}
             audit_file=args.audit_jsonl.open('w') if args.audit_jsonl else None
             try:

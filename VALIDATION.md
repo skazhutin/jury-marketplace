@@ -1,5 +1,29 @@
 # Release validation
 
+## Release 1.1.0 — 2026-10-07
+
+Local environment: macOS, Codex CLI 0.158.0, Node 24.16.0, Python 3.12.13.
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Package/marketplace consistency | PASSED | Both manifest formats, lockfiles, MCP entrypoints, bundles and all 19 read-only role definitions |
+| JavaScript bridge and adapter regressions | PASSED | 10 Project tests; 3 Startup tests, including bundled handshakes, health failures, inert resources, failed-run errors and idempotent requests |
+| Python regressions | PASSED | 13 Project tests; 6 Startup runtime tests; 5 Startup recording tests |
+| Dependency vulnerability audit | PASSED | Both complete npm dependency trees: zero reported vulnerabilities after SDK/Apps/Zod and transitive updates |
+| Local readiness | PASSED | Both 1.1.0 packages return READY; compatible Codex, login, Python, Node and bundled role configurations |
+| Native Startup coordinator preflight | PASSED | CLI 0.158.0; observed read_ok, write_denied, network_denied and canary_absent; no Jury roles started |
+| CI maintenance | CONFIGURED | Push/PR, manual and weekly runs; Linux/macOS × Node 20/24 × Python 3.11/3.14; verify actual workflow runs before claiming a platform passed |
+| Dependency maintenance | CONFIGURED | Weekly grouped npm and GitHub Actions Dependabot updates; rebuilt bundles and notices required |
+| Local widget rendering | PASSED | Updated bundles in a synthetic MCP Apps host at 390px and 900px; keyboard disclosures, inert report text, no horizontal overflow or console errors |
+| Full eight/eleven-role evaluation | NOT RERUN | Readiness and model-free regressions do not substitute for a full independent Jury evaluation |
+| Native Desktop inline widget / picker | NOT TESTED | MCP resource retrieval does not establish native app presentation |
+
+Historical native probes below remain evidence for 1.0.0 only. No old failed job or
+private runtime trace is rewritten as a new success. Runtime readiness never
+claims remote model access or completed adjudication.
+
+## Historical release 1.0.0
+
 Version: **1.0.0** for both plugins. Validation date: **2026-09-14**.
 
 | Check | Result | Scope |

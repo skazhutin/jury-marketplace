@@ -51,7 +51,7 @@ export function render(container,state,details={}) {
   if(!details.sources?.length)appendText(sources,'No external source URLs recorded. User-reported and synthetic evidence remain labeled in the reports.');evidence.append(sources);
   evidence.append(disclosure('Material disagreements',s['AGENT DISAGREEMENTS']||'No material disagreements recorded.'));
   const originals=el('details');originals.append(el('summary','All eleven original reports'));
-  for(const report of details.reports||[]){const d=disclosure(report.role.replace('startup_','').replaceAll('_',' '),report.text);appendText(d,`Report SHA-256: ${report.sha256}`,'hash');originals.append(d);}evidence.append(originals);
+  for(const report of details.reports||[]){const d=disclosure(report.role.replace('startup_','').replaceAll('_',' '),report.text);appendText(d,`Report SHA-256: ${report.sha256 || 'Not reported.'}`,'hash');originals.append(d);}evidence.append(originals);
   evidence.append(disclosure('Judge report / text fallback',r.text_report));
   evidence.append(disclosure('Execution limitations',[s['ANALYSIS STATUS'],...(r.limitations||[])].filter(Boolean).join('\n\n')));
   evidence.append(disclosure('Runtime validation metadata',JSON.stringify(details.runtime||{},null,2)));

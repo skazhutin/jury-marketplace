@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const URI='ui://startup-jury/result-v1.html';
+const version=JSON.parse(await readFile(path.join(ROOT,'package.json'),'utf8')).version;
 const stateSchema={evaluation_id:z.string(),status:z.enum(['RUNNING','FINISHED','FAILED']),
   surface:z.literal('COMPUTER-ONLY'),synthetic:z.boolean(),started_at:z.number(),
   completed_roles:z.array(z.string()),started_roles:z.array(z.string()),finished_at:z.number().optional(),
@@ -17,11 +18,12 @@ const stateSchema={evaluation_id:z.string(),status:z.enum(['RUNNING','FINISHED',
     sections:z.record(z.string(),z.string()),experiments:z.array(z.object({fields:z.record(z.string(),z.string()),text:z.string()})),
     text_report:z.string(),limitations:z.array(z.string())}).optional()};
 function adapter(operation,args){return new Promise((resolve,reject)=>{
-  const child=spawn(process.env.STARTUP_JURY_PYTHON || 'python3',[path.join(ROOT,'scripts/jobs.py'),operation],{cwd:ROOT,stdio:['pipe','pipe','ignore'],env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+  const script=operation==='health'?'doctor.py':'jobs.py';
+  const child=spawn(process.env.STARTUP_JURY_PYTHON || 'python3',[path.join(ROOT,'scripts',script),...(operation==='health'?[]:[operation])],{cwd:ROOT,stdio:['pipe','pipe','ignore'],env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
   let data='';const timer=setTimeout(()=>child.kill(),60000);
   child.stdout.on('data',chunk=>{data+=chunk;if(data.length>12000000)child.kill();});
   child.on('error',()=>{clearTimeout(timer);reject(new Error('Local Python bridge could not start.'));});
-  child.on('close',()=>{clearTimeout(timer);try{const out=JSON.parse(data);if(out.error && !out.status)reject(new Error(out.error));else resolve(out);}catch{reject(new Error('Local bridge returned an invalid response.'));}});
+  child.on('close',code=>{clearTimeout(timer);try{const out=JSON.parse(data);if(out.error && !out.status)reject(new Error(out.error));else if(code!==0 && !(operation==='health' && code===1 && out.status==='BLOCKED'))reject(new Error('Local bridge did not complete successfully.'));else resolve(out);}catch{reject(new Error('Local bridge returned an invalid response.'));}});
   child.stdin.end(JSON.stringify(args));
 });}
 function output(state){
@@ -32,11 +34,14 @@ function output(state){
   }
   let text=state.status==='FINISHED'?state.result.text_report:state.status==='FAILED'?`ANALYSIS STATUS: BLOCKED\nVERDICT: NOT ISSUED\n${state.error}`:`Startup Jury is running (${state.completed_roles.length}/11 reports captured). Retrieve evaluation ${state.evaluation_id} with get_evaluation; do not start another run.`;
   if(state.result?.limitations?.length)text+='\n\nExecution limitations:\n'+state.result.limitations.join('\n');
-  return {structuredContent:copy,content:[{type:'text',text}],_meta:{startupJuryDetails:details}};
+  return {structuredContent:copy,content:[{type:'text',text}],_meta:{startupJuryDetails:details},isError:state.status==='FAILED'};
 }
 async function call(operation,args){try{return output(await adapter(operation,args));}catch(error){return {isError:true,content:[{type:'text',text:error.message}]};}}
 export function createServer(){
-  const server=new McpServer({name:'startup-jury',version:'1.0.0'},{instructions:'Startup Jury uses the existing isolated eleven-role engine. Start once with a stable request_id, retrieve until terminal, then show_evaluation. Never substitute a model-authored verdict. synthetic_test runs only the fixed fictional regression packet. No external actions.'});
+  const server=new McpServer({name:'startup-jury',version},{instructions:'Startup Jury uses the existing isolated eleven-role engine. Start once with a stable request_id, retrieve until terminal, then show_evaluation. Never substitute a model-authored verdict. synthetic_test runs only the fixed fictional regression packet. No external actions.'});
+  server.registerTool('health_check',{title:'Check Startup Jury readiness',description:'Check bundled roles, runtime dependencies, compatible Codex and login without model calls or an evaluation. READY means local readiness; remote model access and a complete Jury run are checked during evaluation.',
+    inputSchema:z.object({}).strict(),outputSchema:{plugin:z.string(),version:z.string(),status:z.enum(['READY','BLOCKED']),runtime_validation:z.string(),checks:z.array(z.object({name:z.string(),status:z.enum(['PASS','BLOCKED']),detail:z.string()}))},
+    annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false,idempotentHint:true}},async()=>{try{const state=await adapter('health',{});return {structuredContent:state,content:[{type:'text',text:JSON.stringify(state)}],isError:state.status==='BLOCKED'};}catch(error){return {isError:true,content:[{type:'text',text:error.message}]};}});
   server.registerTool('start_evaluation',{title:'Evaluate a startup with Startup Jury',description:'Use this when the user invokes @Startup Jury or requests a Startup Jury evaluation. Submits the idea and permitted evidence to the EXISTING isolated eleven-role engine. Reuse request_id on retries. Use synthetic_test only for an explicitly requested installation regression; it ignores real startup input.',
     inputSchema:z.object({request:z.string().min(1).max(60000),request_id:z.string().regex(/^[A-Za-z0-9_-]{8,80}$/),synthetic_test:z.boolean().default(false)}).strict(),outputSchema:stateSchema,
     annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true,idempotentHint:true}},args=>call('start',args));

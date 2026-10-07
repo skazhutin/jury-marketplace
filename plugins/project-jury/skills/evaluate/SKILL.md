@@ -18,3 +18,7 @@ Keep the returned job ID. Retrieve it through `get_result` roughly every 30 seco
 Show the result component when the surface supports MCP Apps. Always preserve the Judge's final report and its conceptual sections as a structured-text fallback. Do not turn LOW/MEDIUM/HIGH confidence into a numerical project score. `get_result(include_reports=true)` returns intentional reviewer reports for text-only inspection. Never expose runtime JSONL or hidden/private reasoning.
 
 Evaluation is read-only with respect to user repositories/files and external services. The adapter may create only private job artifacts. It exposes no shell, file-reading, publishing or messaging tool. Never transmit credentials or unrelated local contents. This plugin is computer-only and includes its own engine and native agents. A compatible local Codex login is required. No manual Jury setup is needed.
+
+For installation troubleshooting or readiness requests, call `health_check` first.
+It makes no model calls. Report BLOCKED checks accurately. READY confirms local
+readiness only; never present it as a successful full Jury evaluation.

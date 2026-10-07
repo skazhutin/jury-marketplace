@@ -4148,13 +4148,14 @@ var require_fast_uri = __commonJS({
         if (!malformedIPLiteral) {
           malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP);
         }
-        if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
-          if (uri.indexOf("%") !== -1) {
-            if (parsed.host !== void 0 && !malformedIPLiteral) {
-              const host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
-              parsed.host = reescapeHostDelimiters(host, isIP);
-            }
+        if (uri.indexOf("%") !== -1 && parsed.host !== void 0 && !malformedIPLiteral) {
+          let host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
+          if (!isIP) {
+            host = normalizePercentEncoding(host.toLowerCase());
           }
+          parsed.host = reescapeHostDelimiters(host, isIP);
+        }
+        if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
           if (parsed.path) {
             parsed.path = normalizePathEncoding(parsed.path);
           }
@@ -8435,10 +8436,10 @@ function nanoidOfLength(length) {
 }
 var duration = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
 var guid = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-var uuid = (version2) => {
-  if (!version2)
+var uuid = (version3) => {
+  if (!version3)
     return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
-  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version2}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+  return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version3}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
 };
 var email = /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/;
 var _emoji = `^(?=[\\s\\S]*[\\p{Extended_Pictographic}\\p{Regional_Indicator}\\u20E3])[\\p{Extended_Pictographic}\\p{Emoji_Component}]+$`;
@@ -15215,6 +15216,9 @@ var Protocol = class {
       this.setRequestHandler(GetTaskPayloadRequestSchema, async (request, extra) => {
         const handleTaskResult = async () => {
           const taskId = request.params.taskId;
+          if (!await this._taskStore.getTask(taskId, extra.sessionId)) {
+            throw new McpError(ErrorCode.InvalidParams, `Task not found: ${taskId}`);
+          }
           if (this._taskMessageQueue) {
             let queuedMessage;
             while (queuedMessage = await this._taskMessageQueue.dequeue(taskId, extra.sessionId)) {
@@ -15245,12 +15249,12 @@ var Protocol = class {
             throw new McpError(ErrorCode.InvalidParams, `Task not found: ${taskId}`);
           }
           if (!isTerminal(task.status)) {
-            await this._waitForTaskUpdate(taskId, extra.signal);
+            await this._waitForTaskUpdate(taskId, extra.signal, extra.sessionId);
             return await handleTaskResult();
           }
           if (isTerminal(task.status)) {
             const result = await this._taskStore.getTaskResult(taskId, extra.sessionId);
-            this._clearTaskQueue(taskId);
+            this._clearTaskQueue(taskId, extra.sessionId);
             return {
               ...result,
               _meta: {
@@ -15287,7 +15291,7 @@ var Protocol = class {
             throw new McpError(ErrorCode.InvalidParams, `Cannot cancel task in terminal status: ${task.status}`);
           }
           await this._taskStore.updateTaskStatus(request.params.taskId, "cancelled", "Client cancelled task execution.", extra.sessionId);
-          this._clearTaskQueue(request.params.taskId);
+          this._clearTaskQueue(request.params.taskId, extra.sessionId);
           const cancelledTask = await this._taskStore.getTask(request.params.taskId, extra.sessionId);
           if (!cancelledTask) {
             throw new McpError(ErrorCode.InvalidParams, `Task not found after cancellation: ${request.params.taskId}`);
@@ -15415,6 +15419,19 @@ var Protocol = class {
     const handler = this._requestHandlers.get(request.method) ?? this.fallbackRequestHandler;
     const capturedTransport = this._transport;
     const relatedTaskId = request.params?._meta?.[RELATED_TASK_META_KEY]?.taskId;
+    const sessionId = capturedTransport?.sessionId;
+    const store = this._taskStore;
+    let relatedTaskFound = true;
+    let relatedTaskLookup;
+    if (relatedTaskId && store && this._taskMessageQueue && sessionId !== void 0) {
+      relatedTaskFound = false;
+      relatedTaskLookup = (async () => {
+        if (!await store.getTask(relatedTaskId, sessionId)) {
+          throw new McpError(ErrorCode.InvalidParams, `Task not found: ${relatedTaskId}`);
+        }
+        relatedTaskFound = true;
+      })();
+    }
     if (handler === void 0) {
       const errorResponse = {
         jsonrpc: "2.0",
@@ -15424,7 +15441,10 @@ var Protocol = class {
           message: "Method not found"
         }
       };
-      if (relatedTaskId && this._taskMessageQueue) {
+      if (relatedTaskId && relatedTaskLookup) {
+        const queuedError = { type: "error", message: errorResponse, timestamp: Date.now() };
+        relatedTaskLookup.then(() => this._enqueueTaskMessage(relatedTaskId, queuedError, sessionId), () => capturedTransport?.send(errorResponse)).catch((error2) => this._onerror(new Error(`Failed to send an error response: ${error2}`)));
+      } else if (relatedTaskId && this._taskMessageQueue) {
         this._enqueueTaskMessage(relatedTaskId, {
           type: "error",
           message: errorResponse,
@@ -15475,7 +15495,10 @@ var Protocol = class {
       closeSSEStream: extra?.closeSSEStream,
       closeStandaloneSSEStream: extra?.closeStandaloneSSEStream
     };
-    Promise.resolve().then(() => {
+    (relatedTaskLookup ?? Promise.resolve()).then(() => {
+      if (relatedTaskLookup && abortController.signal.aborted) {
+        throw new McpError(ErrorCode.ConnectionClosed, "Request was cancelled");
+      }
       if (taskCreationParams) {
         this.assertTaskHandlerCapability(request.method);
       }
@@ -15510,7 +15533,7 @@ var Protocol = class {
           ...error2["data"] !== void 0 && { data: error2["data"] }
         }
       };
-      if (relatedTaskId && this._taskMessageQueue) {
+      if (relatedTaskId && this._taskMessageQueue && relatedTaskFound) {
         await this._enqueueTaskMessage(relatedTaskId, {
           type: "error",
           message: errorResponse,
@@ -15990,7 +16013,7 @@ var Protocol = class {
       throw new Error("Cannot enqueue task message: taskStore and taskMessageQueue are not configured");
     }
     const maxQueueSize = this._options?.maxTaskQueueSize;
-    await this._taskMessageQueue.enqueue(taskId, message, sessionId, maxQueueSize);
+    await this._taskMessageQueue.enqueue(taskId, message, sessionId ?? this._transport?.sessionId, maxQueueSize);
   }
   /**
    * Clears the message queue for a task and rejects any pending request resolvers.
@@ -16019,12 +16042,13 @@ var Protocol = class {
    * Uses polling to check for updates at the task's configured poll interval.
    * @param taskId The task ID to wait for
    * @param signal Abort signal to cancel the wait
+   * @param sessionId Session of the request that waits, passed to the task store
    * @returns Promise that resolves when an update occurs or rejects if aborted
    */
-  async _waitForTaskUpdate(taskId, signal) {
+  async _waitForTaskUpdate(taskId, signal, sessionId) {
     let interval = this._options?.defaultTaskPollInterval ?? 1e3;
     try {
-      const task = await this._taskStore?.getTask(taskId);
+      const task = await this._taskStore?.getTask(taskId, sessionId);
       if (task?.pollInterval) {
         interval = task.pollInterval;
       }
@@ -16925,6 +16949,7 @@ var StdioServerTransport = class {
 // server/main.mjs
 import { readFileSync as readFileSync2 } from "node:fs";
 import { join as join2 } from "node:path";
+import { spawnSync } from "node:child_process";
 
 // server/adapter.mjs
 import { mkdirSync, readFileSync, writeFileSync, existsSync, lstatSync, renameSync } from "node:fs";
@@ -17008,7 +17033,7 @@ function submit(args) {
   }
   writeFileSync(join(path, "request.json"), JSON.stringify(args), { mode: 384, flag: "wx" });
   writeFileSync(join(path, "status.json"), JSON.stringify({ job_id: args.request_id, job_status: "RUNNING", synthetic: args.mode === "synthetic_validation", started_at: Date.now() / 1e3 }), { mode: 384, flag: "wx" });
-  const allowed = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "CODEX_HOME", "SSL_CERT_FILE", "SSL_CERT_DIR"];
+  const allowed = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "CODEX_HOME", "SSL_CERT_FILE", "SSL_CERT_DIR", "JURY_CODEX_BINARY"];
   const env = Object.fromEntries(allowed.filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
   const worker = spawn(process.env.PROJECT_JURY_PYTHON || "python3", [join(root, "scripts/worker.py"), path], { cwd: path, env, stdio: "ignore", detached: true, shell: false });
   worker.once("error", (error2) => {
@@ -17066,9 +17091,11 @@ ${r.report || r.failure || "Not started."}`).join("\n\n") + "\n\n# PERMISSION EV
 }
 
 // server/main.mjs
-var server = new Server({ name: "project-jury", title: "Project Jury", version: "1.0.0" }, { capabilities: { tools: {}, resources: {} } });
+var version2 = JSON.parse(readFileSync2(join2(root, "package.json"), "utf8")).version;
+var server = new Server({ name: "project-jury", title: "Project Jury", version: version2 }, { capabilities: { tools: {}, resources: {} } });
 var uiMeta = { ui: { resourceUri, visibility: ["model", "app"] }, "openai/outputTemplate": resourceUri, "openai/widgetAccessible": true, securitySchemes: [{ type: "noauth" }] };
 var tools = [
+  { name: "health_check", title: "Check Project Jury readiness", description: "Check the bundled engine, native roles, Node/Python, compatible Codex and login without model calls or starting an evaluation. READY is local readiness; remote model access and a complete Jury run are checked during evaluation.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
   { name: "submit_evaluation", title: "Run Project Jury", description: "Use this when the user asks Project Jury to evaluate an idea. Submit the frozen PROJECT PACKET prepared with the bundled Project Jury packet and principles resources; do not improve the idea. Runs the existing isolated eight-agent engine on this computer. Generate one fresh UUID request_id, then retrieve that job until finished. For installation tests only, select synthetic_validation and omit packet/sources; it runs the existing synthetic fixture. Never evaluate or impersonate the reviewers in the parent conversation.", inputSchema: { type: "object", additionalProperties: false, properties: { request_id: { type: "string", format: "uuid" }, mode: { type: "string", enum: ["evaluation", "synthetic_validation"] }, packet: { type: "object", description: "Exact neutral packet. Required fields: " + packetFields.join("; "), additionalProperties: true }, common_sources: { type: "array", description: "Exact legitimately supplied source content/references, common to all first-stage roles. No unrelated local paths, secrets or coordinator opinions.", items: {} } }, required: ["request_id", "mode"] }, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }, _meta: { ...uiMeta, "openai/toolInvocation/invoking": "Starting independent Jury", "openai/toolInvocation/invoked": "Jury started" } },
   { name: "get_result", title: "Read Project Jury result", description: "Use this to retrieve a previously submitted Project Jury job on this computer. Wait about 30 seconds between RUNNING responses. FINISHED returns the validated Judge report and result component. include_reports exposes only intentional role reports and permission evidence for text-only surfaces; it never exposes hidden reasoning or runtime traces.", inputSchema: { type: "object", additionalProperties: false, properties: { job_id: { type: "string", format: "uuid" }, include_reports: { type: "boolean", default: false } }, required: ["job_id"] }, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }, _meta: { ...uiMeta, "openai/toolInvocation/invoking": "Reading Jury result", "openai/toolInvocation/invoked": "Jury result" } }
 ];
@@ -17077,6 +17104,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
   try {
     const args = req.params.arguments || {};
+    if (req.params.name === "health_check") {
+      if (Object.keys(args).length) throw new Error("Health check accepts no arguments.");
+      const probe = spawnSync(process.env.PROJECT_JURY_PYTHON || "python3", [join2(root, "scripts/doctor.py")], { encoding: "utf8", timeout: 45e3, shell: false });
+      if (probe.error || ![0, 1].includes(probe.status)) throw new Error("Local readiness check could not complete.");
+      const health = JSON.parse(probe.stdout);
+      return { content: [{ type: "text", text: JSON.stringify(health) }], structuredContent: health, isError: health.status === "BLOCKED" };
+    }
     if (req.params.name === "submit_evaluation") return toolResult(submit(args));
     if (req.params.name === "get_result") {
       if (Object.keys(args).some((k) => !["job_id", "include_reports"].includes(k)) || args.include_reports !== void 0 && typeof args.include_reports !== "boolean") throw new Error("Unsupported result argument.");

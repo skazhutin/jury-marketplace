@@ -75,7 +75,7 @@ export function submit(args) {
   }
   writeFileSync(join(path,'request.json'),JSON.stringify(args),{mode:0o600,flag:'wx'});
   writeFileSync(join(path,'status.json'),JSON.stringify({job_id:args.request_id,job_status:'RUNNING',synthetic:args.mode==='synthetic_validation',started_at:Date.now()/1000}),{mode:0o600,flag:'wx'});
-  const allowed = ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR'];
+  const allowed = ['PATH','HOME','USER','LOGNAME','TMPDIR','LANG','LC_ALL','CODEX_HOME','SSL_CERT_FILE','SSL_CERT_DIR','JURY_CODEX_BINARY'];
   const env = Object.fromEntries(allowed.filter(k => process.env[k]).map(k => [k,process.env[k]]));
   const worker = spawn(process.env.PROJECT_JURY_PYTHON || 'python3',[join(root,'scripts/worker.py'),path],{cwd:path,env,stdio:'ignore',detached:true,shell:false});
   worker.once('error',error => {

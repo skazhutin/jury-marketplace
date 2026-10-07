@@ -11,9 +11,9 @@ test.after(()=>fs.rmSync(testHome,{recursive:true,force:true}));
 const root=new URL('../',import.meta.url).pathname;
 test('installed-format bridge exposes only bounded evaluation tools and inert UI',async()=>{
  const client=new Client({name:'startup-jury-contract-test',version:'1.0.0'});
- await client.connect(new StdioClientTransport({command:'python3',args:[root+'scripts/start_server.py'],cwd:root,stderr:'pipe'}));
+ await client.connect(new StdioClientTransport({command:'python3',args:[root+'scripts/start_server.py'],cwd:root,stderr:'pipe',env:{...process.env,JURY_CODEX_BINARY:'/missing-jury-test-runtime'}}));
  try{
-  const {tools}=await client.listTools();assert.deepEqual(tools.map(t=>t.name).sort(),['get_evaluation','show_evaluation','start_evaluation']);
+  const {tools}=await client.listTools();assert.deepEqual(tools.map(t=>t.name).sort(),['get_evaluation','health_check','show_evaluation','start_evaluation']);
   for(const t of tools){assert.equal(t.annotations.readOnlyHint,true);assert.equal(t.annotations.destructiveHint,false);assert.ok(t.outputSchema);assert.equal(t.inputSchema.properties.command,undefined);assert.equal(t.inputSchema.properties.path,undefined);}
   const resource=await client.readResource({uri:'ui://startup-jury/result-v1.html'});
   assert.equal(resource.contents[0].mimeType,'text/html;profile=mcp-app');
@@ -21,6 +21,13 @@ test('installed-format bridge exposes only bounded evaluation tools and inert UI
   assert.ok(resource.contents[0].text.includes('STARTUP JURY'));
   const invalid=await client.callTool({name:'get_evaluation',arguments:{evaluation_id:'../../config.toml'}});assert.equal(invalid.isError,true);
   const absent=await client.callTool({name:'get_evaluation',arguments:{evaluation_id:'00000000000000000000000000000000'}});assert.equal(absent.isError,true);assert.ok(absent.content[0].text.includes('not found'));
+  const health=await client.callTool({name:'health_check',arguments:{}});assert.equal(health.isError,true);assert.equal(health.structuredContent.status,'BLOCKED');assert.match(health.structuredContent.runtime_validation,/NOT_RUN/);
+  // A terminal engine failure must remain a tool error, not a successful verdict.
+  const failedId='11111111111111111111111111111111';
+  const failedFolder=testHome+'/jury-marketplace/startup-jury/jobs/'+failedId;
+  fs.mkdirSync(failedFolder,{recursive:true,mode:0o700});
+  fs.writeFileSync(failedFolder+'/state.json',JSON.stringify({evaluation_id:failedId,status:'FAILED',surface:'COMPUTER-ONLY',synthetic:true,started_at:0,completed_roles:[],started_roles:[],error:'Engine fixture failed'}));
+  const failed=await client.callTool({name:'get_evaluation',arguments:{evaluation_id:failedId}});assert.equal(failed.isError,true);assert.match(failed.content[0].text,/NOT ISSUED/);
  }finally{await client.close();}
 });
 test('private adapter rejects command injection fields before creating any job',()=>{
